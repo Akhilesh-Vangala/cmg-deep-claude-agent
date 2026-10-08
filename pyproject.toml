@@ -17,6 +17,7 @@ dependencies = [
   "python-dotenv>=1.0.0",
   "tenacity>=8.3.0",
   "rich>=13.7.0",
+  "mcp>=2.0",
 ]
 
 [project.optional-dependencies]
@@ -25,7 +26,8 @@ claude = ["anthropic>=0.40.0"]
 
 [project.scripts]
 cmg-agent = "cmg_agent.cli:main"
-cmg-eval = "cmg_agent.eval_runner:main"
+cmg-eval-agent = "cmg_agent.eval_agent:main"
+cmg-mcp = "cmg_agent.mcp_server:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

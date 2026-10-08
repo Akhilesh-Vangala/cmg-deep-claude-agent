@@ -1,115 +1,121 @@
 # CMG Deep Claude Agent
 
-Reusable Claude-powered **healthcare intelligence** agent for CMG-style workflows: drug labels, clinical trials, and coverage pointers — with **MCP tools**, **Agent Skills**, **citations**, and **human-review gates**.
+A healthcare-evidence agent that uses **Claude Code as its agent runtime**. It answers Commercial, Medical, and Government Affairs (CMG) questions about drug labels, clinical trials, and Medicare coverage, using live public data through a **Model Context Protocol (MCP)** server and four reusable **Agent Skills**. Every answer is graded by a program that checks each cited quote word for word against the source the agent actually retrieved.
 
-> Informational prototype only. Not medical advice. Not promotional content. Unsupported or potentially off-label claims are flagged for human review.
+> Research prototype on public data only. Not medical advice and not promotional content. No PHI.
 
-Suggested GitHub: `cmg-deep-claude-agent`
+## Results
 
-## Why this exists
+30 golden tasks, graded automatically. Pass rate is per task with a bootstrap 95% CI over tasks; A to C were run twice per task.
 
-Aligned to Genentech / CMG GenAI Applications internship themes:
+| Configuration | Pass rate (95% CI) | Claims verified | Cost / task* | Median latency |
+|---|---|---|---|---|
+| Fixed pipeline, no LLM (the original version of this repo) | 20% (7 to 37%) | n/a† | $0 | 0.1 s |
+| A. Claude Haiku, no tools | 23% (10 to 40%) | 0% | $0.0014 | 10 s |
+| B. Claude Haiku + MCP tools | 80% (63 to 93%) | 89% | $0.0025 | 11 s |
+| **C. Claude Haiku + MCP tools + skills** | **95% (87 to 100%)** | **94%** | **$0.0033** | **14 s** |
+| D. Configuration C on Claude Sonnet | 97% (90 to 100%) | 94% | $0.0532 | 16 s |
 
-- Claude Code / agent runtime patterns
-- Model Context Protocol (MCP) tool access
-- Reusable Agent Skills (`SKILL.md`)
-- Multi-step business workflows with evaluation traces
-- Human-in-the-loop escalation
+\* API list price computed from measured token usage. Latency is wall-clock for the whole agent run through headless Claude Code.  
+† The pipeline's claims are raw excerpts of what it fetched, so they verify by construction; it fails on choosing the product, refusing, and reporting not-found.
 
-The manager selects the exact internal use case. This repo is a **deliberately aligned public proposal**, not a Genentech internal system.
+![Pass rate by configuration](docs/pass_rate.png)
 
-## Example request
+**What the numbers say**
 
-> Compare the labeled indications and major warnings of two oncology treatments, identify relevant clinical trials, summarize the supporting evidence, and prepare a cited briefing for medical-affairs review.
+- **Agent vs fixed pipeline: +75 points** (paired 95% CI +60 to +90). The pipeline matched drug names against a hard-coded list, so it answered most questions about the wrong product, never refused, and never reported "not found".
+- **Tools: +57 points.** Without tools, none of Claude's 210 claims could be traced to a retrieved source, and 4 runs cited NCT IDs that do not exist. With tools: zero invented trial IDs in every configuration.
+- **Skills: +15 points** (paired CI +2 to +30). Skills fixed refusals (50% to 100%), off-label questions (0% to 100%), and ambiguous product names such as KEYTRUDA vs KEYTRUDA QLEX (67% to 100%), and cut MCP tool calls per task from 3.8 to 2.6.
+- **Sonnet vs Haiku: +2 points at 16x the cost.** For this workload, Haiku with skills is the better default.
+- **Remaining failures are over-escalation** (flagging human review when not required), never a wrong product, an unverifiable claim passing, or a missed refusal.
 
-```text
-User (Medical / Commercial / Government Affairs)
-        │
-        ▼
-Claude-style agent runtime (planning + tool selection + skills)
-        │
-        ├── FDA MCP  → openFDA labels / warnings
-        ├── Trials MCP → ClinicalTrials.gov
-        └── CMS MCP → coverage policy pointers
-        │
-        ▼
-Structured evidence report + citations + human-review flags
+Full ablation analysis, failure taxonomy, and cost/quality chart: [agentbench-cmg](https://github.com/Akhilesh-Vangala/agentbench-cmg).
+
+## How it works
+
+```
+User question
+   │
+   ▼
+Claude Code, headless (claude -p)  ── system prompt + JSON output schema
+   │  loads skills on demand:  fda-label-lookup · cited-evidence · trial-landscape · review-escalation
+   │
+   ├── MCP server "cmg" (stdio, python -m cmg_agent.mcp_server)
+   │      fda_search_labels      fda_get_label_section   (openFDA, paged)
+   │      trials_search          trials_get              (ClinicalTrials.gov v2)
+   │      cms_ncd_search         cms_ncd_get             (CMS Coverage API, NCDs)
+   │      └─ every document returned is logged to the run's evidence.jsonl with a source_id
+   ▼
+Structured answer: status · summary · claims[statement, source_id, quote] · needs_human_review · review_reasons
+   │
+   ▼
+Verifier (src/cmg_agent/verify.py)
+   claim verified  ⇔  source_id was retrieved in this run  AND  quote is a verbatim substring of it
+   task passed     ⇔  every declared check holds (right product, required sections, status, review flag, no invented NCT IDs)
 ```
 
-## Exact stack
+### Skills (`agent_workspace/.claude/skills/`)
 
-| Component | Implementation |
-| --- | --- |
-| Agent runtime | Python orchestrator (Claude-ready); Claude Agent SDK optional |
-| Tools | MCP-style FDA / Trials / CMS servers |
-| Skills | `SKILL.md` packs (label extraction, evidence synthesis, source verification, escalation) |
-| Data | openFDA, ClinicalTrials.gov API, CMS coverage pointers |
-| Outputs | Pydantic / JSON Schema (`BriefingReport`) |
-| Service | FastAPI |
-| Reliability | schema validation, retries (HTTP), human review flags |
-| Evaluation | golden tasks, groundedness checks, execution traces |
+| Skill | What it encodes |
+|---|---|
+| `fda-label-lookup` | Search, then pick the exact product when names collide; never borrow warnings text and call it a boxed warning; `not_found` rules |
+| `cited-evidence` | Quote discipline that the verifier enforces (verbatim, 1 to 3 sentences, source_id copied from a tool result) |
+| `trial-landscape` | Trial search procedure; a trial existing is not evidence that a drug works |
+| `review-escalation` | When to flag human review (comparative claims, off-label, coverage, ambiguous product, missing evidence) and when to refuse (promotional copy, superiority claims, individual patient advice) |
 
-## Quick start
+### Golden tasks (`evals/golden/agent_tasks.json`)
+
+| Category | Tasks | What is checked |
+|---|---|---|
+| Label questions | 12 | Correct product's label, required section cited, no fabricated boxed warning (Ocrevus and Tecentriq have none) |
+| Ambiguous product names | 3 | KEYTRUDA vs KEYTRUDA QLEX, Lunsumio vs Lunsumio Velo |
+| Comparisons | 3 | Both products covered; "is X better than Y" must be flagged |
+| Clinical trials | 4 | Real NCT IDs from the search, cited |
+| Medicare coverage | 3 | The right NCD cited; always escalated |
+| Refusal and off-label | 3 | Promotional copy and superiority slides refused; off-label use flagged |
+| Not found | 2 | A fake drug, and a real drug missing from openFDA (Evrysdi): no claims |
+
+## Run it
+
+Requires Python 3.10+ and Claude Code logged in (`claude` on PATH, or set `CLAUDE_BIN`). No API key is needed when Claude Code is signed in.
 
 ```bash
-cd cmg-deep-claude-agent
 python -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
+pytest -q                                            # offline verifier tests
 
-# LIVE demo against openFDA + ClinicalTrials.gov + CMS (cached under .cache/)
-python scripts/capture_live_demo.py
-cmg-agent --pretty --drugs Keytruda Opdivo \
-  -q "Compare labeled indications and major warnings of Keytruda and Opdivo, identify relevant clinical trials, and prepare a cited briefing for medical-affairs review."
+# One task, one configuration (writes runs/<run_id>/: transcript, evidence, answer)
+cmg-eval-agent --configs C_tools_skills --only L01
 
-# Offline golden eval (CI only — fixtures marked [CI FIXTURE])
-cmg-eval --offline
+# Full golden set: baseline and ablations
+cmg-eval-agent --configs BASELINE C_tools_skills --workers 4
+cmg-eval-agent --configs A_closed_book B_tools_only C_tools_skills --repeats 2 --workers 6
 
-# API (live by default)
-uvicorn cmg_agent.api.app:app --reload
+# Use the MCP server from any MCP client
+python -m cmg_agent.mcp_server
 ```
 
-Live demo artifacts: `examples/live/` (real NCT IDs, openFDA set_ids, HTTP latencies).
-API responses are disk-cached for 7 days so demos are fast without looking fabricated.
+Example runs with their evidence logs are in [`examples/agent_runs/`](examples/agent_runs/) (correct product chosen between KEYTRUDA and KEYTRUDA QLEX, a refused superiority slide, a fake drug reported as not found, a Medicare NGS coverage answer).
 
-## Reusable across workflows
+## Repository layout
 
-Same runtime, different skill/tool emphasis — no orchestrator rewrite:
-
-| Workflow | Skills | Tools |
-| --- | --- | --- |
-| `drug_label` | label extraction, source verification, escalation | FDA MCP |
-| `clinical_trials` | evidence synthesis, source verification, escalation | Trials MCP |
-| `coverage` | source verification, escalation | CMS MCP |
-| `comparative_briefing` | all skills | FDA + Trials + CMS |
-
-```bash
-curl localhost:8000/workflows/drug_label
-curl localhost:8000/workflows/clinical_trials
+```
+agent_workspace/.claude/skills/   Agent Skills loaded by Claude Code
+src/cmg_agent/sources.py          live openFDA, ClinicalTrials.gov, CMS tools (+ disk cache)
+src/cmg_agent/mcp_server.py       MCP server exposing those tools
+src/cmg_agent/claude_runner.py    headless Claude Code runner (config: model, tools, skills)
+src/cmg_agent/ollama_runner.py    same tools and skills on a local open-weight model
+src/cmg_agent/verify.py           citation verifier and task grader
+src/cmg_agent/eval_agent.py       golden-set runner, baseline adapter, bootstrap CIs
+src/cmg_agent/agent.py            original fixed pipeline, kept as the baseline
+evals/golden/agent_tasks.json     30 golden tasks
+reports/                          raw eval outputs (every run, every check)
 ```
 
-## Evaluation
+## Limitations
 
-Golden suite: `evals/golden/tasks.json` (8 tasks).
-
-Measured dimensions:
-
-- task completion (pass/fail gates)
-- citation-supported claim rate
-- tool success rate
-- human-review flag correctness (including unsupported superiority)
-
-Traces land in `traces/*.json`.
-
-## Architecture
-
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
-
-## What “impressive” means here
-
-1. Same agent config adapts label → trials workflows without rewriting the runtime.
-2. README + architecture + sample workflows + execution traces.
-3. Measured eval vs simpler/no-guardrail behavior (superiority refusal task).
-
-## License / data
-
-Public APIs and offline fixtures only. Respect openFDA, ClinicalTrials.gov, and CMS terms. No PHI. No autonomous clinical decisions.
+- 30 tasks is a focused golden set, not a broad benchmark; CIs are wide for that reason. Expanding the task set is the next step.
+- The golden tasks were written by the author, and the tool pagination fix (long label sections were truncated, which caused over-escalation) was made after a first run on the same tasks. A held-out task set would remove that risk.
+- Grading is programmatic. It checks product, citations, status, and review flags, but not the overall quality of the summary prose.
+- CMS coverage uses public National Coverage Determinations only; local coverage and commercial payer policies are out of scope.
+- Public data is cached on disk for 7 days so reruns are reproducible; delete `.cache/` to refetch.

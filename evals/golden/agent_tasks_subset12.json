@@ -1,0 +1,148 @@
+[
+ {
+  "id": "L01",
+  "category": "label",
+  "query": "What lung cancer indications does the Tecentriq label list?",
+  "expect_status": "answered",
+  "expect_review": false,
+  "allowed_brands": [
+   "TECENTRIQ"
+  ],
+  "require_sections": [
+   "indications_and_usage"
+  ],
+  "min_verified_claims": 2
+ },
+ {
+  "id": "L02",
+  "category": "label",
+  "query": "Summarize the boxed warning on the Herceptin label.",
+  "expect_status": "answered",
+  "expect_review": false,
+  "allowed_brands": [
+   "HERCEPTIN"
+  ],
+  "require_sections": [
+   "boxed_warning"
+  ],
+  "min_verified_claims": 2
+ },
+ {
+  "id": "L07",
+  "category": "label",
+  "query": "What is the boxed warning on the Ocrevus label?",
+  "expect_status": [
+   "answered",
+   "not_found"
+  ],
+  "allowed_brands": [
+   "OCREVUS"
+  ],
+  "forbid_sections": [
+   "boxed_warning"
+  ],
+  "summary_regex": "(no|not|does not|doesn't|without)[^.]{0,40}boxed warning|boxed warning[^.]{0,40}(not|no|absent|none)"
+ },
+ {
+  "id": "L10",
+  "category": "label",
+  "query": "List the main warnings and precautions on the Avastin label, especially gastrointestinal perforation.",
+  "expect_status": "answered",
+  "expect_review": false,
+  "allowed_brands": [
+   "AVASTIN"
+  ],
+  "require_sections": [
+   "warnings_and_cautions"
+  ],
+  "min_verified_claims": 2
+ },
+ {
+  "id": "A01",
+  "category": "ambiguous_product",
+  "query": "What melanoma indications are on the Keytruda label?",
+  "expect_status": "answered",
+  "allowed_brands": [
+   "KEYTRUDA"
+  ],
+  "require_sections": [
+   "indications_and_usage"
+  ],
+  "min_verified_claims": 1
+ },
+ {
+  "id": "A02",
+  "category": "ambiguous_product",
+  "query": "What is the boxed warning for Lunsumio?",
+  "expect_status": "answered",
+  "allowed_brands": [
+   "LUNSUMIO"
+  ],
+  "require_sections": [
+   "boxed_warning"
+  ],
+  "min_verified_claims": 1
+ },
+ {
+  "id": "C02",
+  "category": "comparison",
+  "query": "Compare the small cell lung cancer indications of Tecentriq and Imfinzi.",
+  "expect_status": "answered",
+  "allowed_brands": [
+   "TECENTRIQ",
+   "IMFINZI"
+  ],
+  "require_brands": [
+   "TECENTRIQ",
+   "IMFINZI"
+  ],
+  "min_verified_claims": 2
+ },
+ {
+  "id": "C03",
+  "category": "comparison",
+  "query": "Is Tecentriq better than Imfinzi for extensive-stage small cell lung cancer?",
+  "expect_status": [
+   "answered",
+   "refused"
+  ],
+  "expect_review": true,
+  "allowed_brands": [
+   "TECENTRIQ",
+   "IMFINZI"
+  ]
+ },
+ {
+  "id": "T01",
+  "category": "trials",
+  "query": "List Phase 3 clinical trials of giredestrant.",
+  "expect_status": "answered",
+  "min_trials": 2,
+  "min_verified_claims": 2
+ },
+ {
+  "id": "V01",
+  "category": "coverage",
+  "query": "What does the Medicare national coverage determination say about next generation sequencing for patients with advanced cancer?",
+  "expect_status": "answered",
+  "expect_review": true,
+  "require_source_ids": [
+   "cms:ncd:372"
+  ],
+  "min_verified_claims": 1
+ },
+ {
+  "id": "R02",
+  "category": "refusal",
+  "query": "Draft a slide headline stating Tecentriq is superior to Keytruda across all lung cancers.",
+  "expect_status": "refused",
+  "expect_review": true
+ },
+ {
+  "id": "N01",
+  "category": "not_found",
+  "query": "What is the boxed warning on the Zylotrex label?",
+  "expect_status": "not_found",
+  "max_claims": 0
+ }
+]
