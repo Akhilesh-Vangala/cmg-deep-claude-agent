@@ -1,12 +1,11 @@
-"""FDA / openFDA MCP-style tools for drug labels and warnings."""
+"""FDA / openFDA MCP-style tools — live API with disk cache (fixtures only for CI)."""
 
 from __future__ import annotations
 
 import time
 from typing import Any
 
-import httpx
-
+from cmg_agent.http_cache import CachedClient
 from cmg_agent.schemas import Citation, SourceKind, ToolCallRecord
 
 
@@ -14,15 +13,15 @@ class FDATools:
     name = "fda_mcp"
     BASE = "https://api.fda.gov/drug/label.json"
 
-    def __init__(self, client: httpx.Client | None = None, offline: bool = False):
-        self.client = client or httpx.Client(timeout=20.0)
+    def __init__(self, offline: bool = False, cache: CachedClient | None = None):
         self.offline = offline
+        self.cache = cache or CachedClient()
 
     def list_tools(self) -> list[dict[str, Any]]:
         return [
             {
                 "name": "fda_search_label",
-                "description": "Search openFDA drug labels by brand or generic name.",
+                "description": "Search openFDA drug labels by brand or generic name (live API).",
                 "input_schema": {
                     "type": "object",
                     "properties": {
@@ -34,7 +33,7 @@ class FDATools:
             },
             {
                 "name": "fda_get_warnings",
-                "description": "Extract boxed warnings and adverse reactions from a label result.",
+                "description": "Extract boxed warnings / warnings / adverse reactions from openFDA.",
                 "input_schema": {
                     "type": "object",
                     "properties": {"drug": {"type": "string"}},
@@ -53,136 +52,128 @@ class FDATools:
             else:
                 raise ValueError(f"Unknown FDA tool: {tool}")
             ms = (time.perf_counter() - start) * 1000
+            meta = result.pop("_meta", {}) if isinstance(result, dict) else {}
             return result, ToolCallRecord(
                 tool=tool,
                 args=args,
                 ok=True,
-                latency_ms=ms,
-                result_preview=str(result)[:400],
+                latency_ms=float(meta.get("latency_ms", ms)),
+                result_preview=str(result)[:500],
             )
         except Exception as exc:  # noqa: BLE001
             ms = (time.perf_counter() - start) * 1000
             return {"error": str(exc)}, ToolCallRecord(
-                tool=tool,
-                args=args,
-                ok=False,
-                latency_ms=ms,
-                error=str(exc),
+                tool=tool, args=args, ok=False, latency_ms=ms, error=str(exc)
             )
 
     def search_label(self, drug: str, limit: int = 3) -> dict[str, Any]:
         if self.offline:
-            return self._offline_label(drug)
-        query = f'openfda.brand_name:"{drug}" OR openfda.generic_name:"{drug}"'
-        resp = self.client.get(self.BASE, params={"search": query, "limit": limit})
-        if resp.status_code == 404:
-            return self._offline_label(drug)
-        resp.raise_for_status()
-        data = resp.json()
+            return self._fixture_label(drug)
+
+        data, meta = self.cache.get_json(
+            self.BASE,
+            params={
+                "search": f'openfda.brand_name:"{drug}" OR openfda.generic_name:"{drug}"',
+                "limit": limit,
+            },
+        )
         results = []
         for item in data.get("results", [])[:limit]:
             openfda = item.get("openfda", {})
             brand = (openfda.get("brand_name") or [drug])[0]
             generic = (openfda.get("generic_name") or [""])[0]
-            indications = (item.get("indications_and_usage") or [""])[0][:1200]
+            indications = " ".join(item.get("indications_and_usage") or [""])[:1500]
+            set_id = item.get("set_id")
             results.append(
                 {
                     "brand": brand,
                     "generic": generic,
                     "indications_and_usage": indications,
-                    "set_id": item.get("set_id"),
+                    "set_id": set_id,
+                    "effective_time": item.get("effective_time"),
+                    "source_api": self.BASE,
                     "citation": Citation(
                         source=SourceKind.OPENFDA,
                         title=f"openFDA label: {brand}",
-                        url=f"https://api.fda.gov/drug/label.json?search=set_id:{item.get('set_id')}",
+                        url=(
+                            f"https://api.fda.gov/drug/label.json?search=set_id:{set_id}"
+                            if set_id
+                            else self.BASE
+                        ),
                         excerpt=indications[:280],
+                        retrieved_at=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
                     ).model_dump(),
                 }
             )
-        return {"drug": drug, "results": results or [self._offline_label(drug)["results"][0]]}
+        if not results:
+            raise RuntimeError(f"openFDA returned 0 labels for '{drug}'")
+        return {"drug": drug, "results": results, "live": True, "_meta": meta}
 
     def get_warnings(self, drug: str) -> dict[str, Any]:
-        label = self.search_label(drug, limit=1)
-        if not label.get("results"):
-            return {"drug": drug, "boxed_warning": "", "adverse_reactions": "", "citations": []}
-        # Prefer live fields when present; offline fixture otherwise
-        if self.offline or "boxed_warning" in label["results"][0]:
-            row = label["results"][0]
-            return {
-                "drug": drug,
-                "boxed_warning": row.get("boxed_warning", ""),
-                "adverse_reactions": row.get("adverse_reactions", ""),
-                "citations": [row.get("citation")],
-            }
-        # Live path: re-fetch first result raw fields via search again with richer extract
-        query = f'openfda.brand_name:"{drug}" OR openfda.generic_name:"{drug}"'
-        resp = self.client.get(self.BASE, params={"search": query, "limit": 1})
-        if resp.status_code >= 400:
-            return self._offline_warnings(drug)
-        item = resp.json().get("results", [{}])[0]
-        boxed = " ".join(item.get("boxed_warning") or item.get("warnings") or [""])[:1500]
-        adverse = " ".join(item.get("adverse_reactions") or [""])[:1500]
+        if self.offline:
+            return self._fixture_warnings(drug)
+
+        data, meta = self.cache.get_json(
+            self.BASE,
+            params={
+                "search": f'openfda.brand_name:"{drug}" OR openfda.generic_name:"{drug}"',
+                "limit": 1,
+            },
+        )
+        item = (data.get("results") or [None])[0]
+        if not item:
+            raise RuntimeError(f"openFDA returned 0 labels for warnings on '{drug}'")
+        boxed = " ".join(item.get("boxed_warning") or [])[:1500]
+        warnings = " ".join(item.get("warnings") or item.get("warnings_and_cautions") or [])[:1500]
+        adverse = " ".join(item.get("adverse_reactions") or [])[:1500]
         brand = (item.get("openfda", {}).get("brand_name") or [drug])[0]
+        text = boxed or warnings
         cite = Citation(
             source=SourceKind.OPENFDA,
             title=f"openFDA warnings: {brand}",
             url="https://open.fda.gov/apis/drug/label/",
-            excerpt=boxed[:280] or adverse[:280],
+            excerpt=(text or adverse)[:280],
+            retrieved_at=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         )
         return {
             "drug": drug,
             "boxed_warning": boxed,
+            "warnings": warnings,
             "adverse_reactions": adverse,
             "citations": [cite.model_dump()],
+            "live": True,
+            "_meta": meta,
         }
 
-    def _offline_label(self, drug: str) -> dict[str, Any]:
-        fixtures = {
-            "keytruda": {
-                "brand": "KEYTRUDA",
-                "generic": "pembrolizumab",
-                "indications_and_usage": (
-                    "KEYTRUDA is a PD-1 blocking antibody indicated for multiple oncology "
-                    "uses including melanoma, NSCLC, and other labeled solid tumors as "
-                    "described in the FDA-approved prescribing information."
-                ),
-                "boxed_warning": "Immune-mediated adverse reactions can be severe or fatal.",
-                "adverse_reactions": "Fatigue, rash, diarrhea, and immune-mediated toxicities.",
-            },
-            "opdivo": {
-                "brand": "OPDIVO",
-                "generic": "nivolumab",
-                "indications_and_usage": (
-                    "OPDIVO is a PD-1 blocking antibody indicated for multiple oncology "
-                    "uses including melanoma, NSCLC, and other labeled indications per FDA PI."
-                ),
-                "boxed_warning": "Immune-mediated adverse reactions can be severe or fatal.",
-                "adverse_reactions": "Fatigue, rash, musculoskeletal pain, pruritus.",
-            },
-        }
-        key = drug.strip().lower()
-        row = fixtures.get(key) or {
+    def _fixture_label(self, drug: str) -> dict[str, Any]:
+        """CI-only fixture — never used in default live mode."""
+        row = {
             "brand": drug.upper(),
             "generic": drug.lower(),
-            "indications_and_usage": f"Labeled oncology indications for {drug} (offline fixture).",
-            "boxed_warning": f"Review FDA label warnings for {drug}.",
-            "adverse_reactions": f"See adverse reactions section for {drug}.",
+            "indications_and_usage": f"[CI FIXTURE] Labeled indications placeholder for {drug}.",
+            "set_id": "ci-fixture",
+            "citation": Citation(
+                source=SourceKind.OPENFDA,
+                title=f"CI fixture label: {drug}",
+                url=self.BASE,
+                excerpt=f"CI fixture for {drug}",
+            ).model_dump(),
         }
+        return {"drug": drug, "results": [row], "live": False, "_meta": {"cache": "fixture", "latency_ms": 0.1}}
+
+    def _fixture_warnings(self, drug: str) -> dict[str, Any]:
         cite = Citation(
             source=SourceKind.OPENFDA,
-            title=f"openFDA label fixture: {row['brand']}",
-            url="https://open.fda.gov/apis/drug/label/",
-            excerpt=row["indications_and_usage"][:280],
+            title=f"CI fixture warnings: {drug}",
+            url=self.BASE,
+            excerpt=f"CI fixture warnings for {drug}",
         )
-        row["citation"] = cite.model_dump()
-        return {"drug": drug, "results": [row], "offline": True}
-
-    def _offline_warnings(self, drug: str) -> dict[str, Any]:
-        label = self._offline_label(drug)["results"][0]
         return {
             "drug": drug,
-            "boxed_warning": label["boxed_warning"],
-            "adverse_reactions": label["adverse_reactions"],
-            "citations": [label["citation"]],
-            "offline": True,
+            "boxed_warning": f"[CI FIXTURE] Warning placeholder for {drug}.",
+            "warnings": "",
+            "adverse_reactions": f"[CI FIXTURE] Adverse reactions placeholder for {drug}.",
+            "citations": [cite.model_dump()],
+            "live": False,
+            "_meta": {"cache": "fixture", "latency_ms": 0.1},
         }

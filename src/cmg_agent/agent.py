@@ -167,15 +167,19 @@ class CMGDeepClaudeAgent:
                     confidence=0.85 if ind and cite else 0.4,
                 )
             )
-        boxed = warn.get("boxed_warning") or ""
+        warning_text = (
+            (warn.get("boxed_warning") or "")
+            or (warn.get("warnings") or "")
+            or (warn.get("adverse_reactions") or "")
+        )
         wcites = [Citation.model_validate(c) for c in (warn.get("citations") or []) if c]
         citations.extend(wcites)
         claims.append(
             EvidenceClaim(
-                claim=f"{drug} major warnings (excerpt): {boxed[:240] or 'See FDA label.'}",
-                supported=bool(boxed and wcites),
+                claim=f"{drug} major warnings (excerpt): {warning_text[:240] or 'Label warnings not present in retrieved openFDA fields.'}",
+                supported=bool(warning_text and wcites),
                 citations=wcites,
-                confidence=0.8 if boxed and wcites else 0.45,
+                confidence=0.8 if warning_text and wcites else 0.45,
             )
         )
         return claims

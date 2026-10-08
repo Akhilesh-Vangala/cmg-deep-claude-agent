@@ -1,0 +1,288 @@
+{
+  "task_id": "cmg-4868bf1640",
+  "workflow": "comparative_briefing",
+  "query": "Compare the labeled indications and major warnings of Keytruda and Opdivo, identify relevant clinical trials, summarize the supporting evidence, and prepare a cited briefing for medical-affairs review.",
+  "summary": "Workflow=comparative_briefing. Drugs=Keytruda, Opdivo. Prepared an informational briefing with 8 claims (6 citation-supported). Skills loaded: escalation, evidence_synthesis, label_extraction, source_verification. Human review required before external medical-affairs use.",
+  "claims": [
+    {
+      "claim": "Keytruda labeled indications (excerpt): 1 INDICATIONS AND USAGE KEYTRUDA QLEX is a combination of pembrolizumab, a programmed death receptor-1 (PD-1)-blocking antibody, and berahyaluronidase alfa, an endoglycosidase, indicated: Melanoma for the treatment of adult patients with un",
+      "supported": true,
+      "citations": [
+        {
+          "source": "openfda",
+          "title": "openFDA label: KEYTRUDA QLEX",
+          "url": "https://api.fda.gov/drug/label.json?search=set_id:097d166f-b73b-41d3-9b37-7653cd2a0c41",
+          "excerpt": "1 INDICATIONS AND USAGE KEYTRUDA QLEX is a combination of pembrolizumab, a programmed death receptor-1 (PD-1)-blocking antibody, and berahyaluronidase alfa, an endoglycosidase, indicated: Melanoma for the treatment of adult patients with unresectable or metastatic melanoma. ( 1.1",
+          "retrieved_at": "2026-10-08T15:35:45Z"
+        }
+      ],
+      "confidence": 0.85,
+      "review_flag": false,
+      "review_reason": null
+    },
+    {
+      "claim": "Keytruda major warnings (excerpt): See FDA label.",
+      "supported": false,
+      "citations": [
+        {
+          "source": "openfda",
+          "title": "openFDA warnings: KEYTRUDA QLEX",
+          "url": "https://open.fda.gov/apis/drug/label/",
+          "excerpt": "5 WARNINGS AND PRECAUTIONS Immune-Mediated Adverse Reactions ( 5.1 ) Immune-mediated adverse reactions, which may be severe or fatal, can occur in any organ system or tissue, including the following: immune-mediated pneumonitis, immune-mediated colitis, immune-mediated hepatitis,",
+          "retrieved_at": "2026-10-08T15:35:45Z"
+        }
+      ],
+      "confidence": 0.45,
+      "review_flag": true,
+      "review_reason": "Missing grounded citation"
+    },
+    {
+      "claim": "Opdivo labeled indications (excerpt): 1 INDICATIONS AND USAGE OPDIVO QVANTIG is a combination of nivolumab, a programmed death receptor-1 (PD-1)-blocking antibody, and hyaluronidase, an endoglycosidase, indicated for the treatment of: Renal Cell Carcinoma (RCC) • adult patients",
+      "supported": true,
+      "citations": [
+        {
+          "source": "openfda",
+          "title": "openFDA label: OPDIVO QVANTIG",
+          "url": "https://api.fda.gov/drug/label.json?search=set_id:7f8c38fa-42f4-4387-9e8c-7a1c66855d8b",
+          "excerpt": "1 INDICATIONS AND USAGE OPDIVO QVANTIG is a combination of nivolumab, a programmed death receptor-1 (PD-1)-blocking antibody, and hyaluronidase, an endoglycosidase, indicated for the treatment of: Renal Cell Carcinoma (RCC) • adult patients with intermediate or poor risk advanced",
+          "retrieved_at": "2026-10-08T15:35:46Z"
+        }
+      ],
+      "confidence": 0.85,
+      "review_flag": false,
+      "review_reason": null
+    },
+    {
+      "claim": "Opdivo major warnings (excerpt): See FDA label.",
+      "supported": false,
+      "citations": [
+        {
+          "source": "openfda",
+          "title": "openFDA warnings: OPDIVO QVANTIG",
+          "url": "https://open.fda.gov/apis/drug/label/",
+          "excerpt": "5 WARNINGS AND PRECAUTIONS • Immune-Mediated Adverse Reactions : (5.1) o Immune-mediated adverse reactions, which may be severe or fatal, can occur in any organ system or tissue, including the following: immune-mediated pneumonitis, immune-mediated colitis, immune-mediated hepati",
+          "retrieved_at": "2026-10-08T15:35:46Z"
+        }
+      ],
+      "confidence": 0.45,
+      "review_flag": true,
+      "review_reason": "Missing grounded citation"
+    },
+    {
+      "claim": "Relevant trial NCT04158544: Immune Monitoring in Metastatic Melanoma (status=UNKNOWN).",
+      "supported": true,
+      "citations": [
+        {
+          "source": "clinicaltrials",
+          "title": "Immune Monitoring in Metastatic Melanoma",
+          "url": "https://clinicaltrials.gov/study/NCT04158544",
+          "excerpt": "Immune Monitoring in Metastatic Melanoma",
+          "retrieved_at": "2026-10-08T15:35:46Z"
+        }
+      ],
+      "confidence": 0.75,
+      "review_flag": false,
+      "review_reason": null
+    },
+    {
+      "claim": "Relevant trial NCT03056599: Precise Local Injection of Anti-cancer Drugs Using Presage's CIVO Device in Soft Tissue Sarcoma (status=COMPLETED).",
+      "supported": true,
+      "citations": [
+        {
+          "source": "clinicaltrials",
+          "title": "Precise Local Injection of Anti-cancer Drugs Using Presage's CIVO Device in Soft Tissue Sarcoma",
+          "url": "https://clinicaltrials.gov/study/NCT03056599",
+          "excerpt": "Precise Local Injection of Anti-cancer Drugs Using Presage's CIVO Device in Soft Tissue Sarcoma",
+          "retrieved_at": "2026-10-08T15:35:46Z"
+        }
+      ],
+      "confidence": 0.75,
+      "review_flag": false,
+      "review_reason": null
+    },
+    {
+      "claim": "Relevant trial NCT05287464: International Multicentric Study ARON-1 (status=RECRUITING).",
+      "supported": true,
+      "citations": [
+        {
+          "source": "clinicaltrials",
+          "title": "International Multicentric Study ARON-1",
+          "url": "https://clinicaltrials.gov/study/NCT05287464",
+          "excerpt": "International Multicentric Study ARON-1",
+          "retrieved_at": "2026-10-08T15:35:46Z"
+        }
+      ],
+      "confidence": 0.75,
+      "review_flag": false,
+      "review_reason": null
+    },
+    {
+      "claim": "CMS Medicare Coverage Database is reachable=True (HTTP 200, 145 ms). Human medical-affairs / reimbursement review is required for 'Keytruda'. This tool returns a citation pointer only — not a coverage determination.",
+      "supported": true,
+      "citations": [
+        {
+          "source": "cms",
+          "title": "CMS Medicare Coverage Database search",
+          "url": "https://www.cms.gov/medicare-coverage-database/search.aspx",
+          "excerpt": "Live CMS MCD probe for topic 'Keytruda' (HTTP 200).",
+          "retrieved_at": "2026-10-08T15:35:46Z"
+        }
+      ],
+      "confidence": 0.6,
+      "review_flag": true,
+      "review_reason": "Coverage always escalated"
+    }
+  ],
+  "citations": [
+    {
+      "source": "openfda",
+      "title": "openFDA label: KEYTRUDA QLEX",
+      "url": "https://api.fda.gov/drug/label.json?search=set_id:097d166f-b73b-41d3-9b37-7653cd2a0c41",
+      "excerpt": "1 INDICATIONS AND USAGE KEYTRUDA QLEX is a combination of pembrolizumab, a programmed death receptor-1 (PD-1)-blocking antibody, and berahyaluronidase alfa, an endoglycosidase, indicated: Melanoma for the treatment of adult patients with unresectable or metastatic melanoma. ( 1.1",
+      "retrieved_at": "2026-10-08T15:35:45Z"
+    },
+    {
+      "source": "openfda",
+      "title": "openFDA warnings: KEYTRUDA QLEX",
+      "url": "https://open.fda.gov/apis/drug/label/",
+      "excerpt": "5 WARNINGS AND PRECAUTIONS Immune-Mediated Adverse Reactions ( 5.1 ) Immune-mediated adverse reactions, which may be severe or fatal, can occur in any organ system or tissue, including the following: immune-mediated pneumonitis, immune-mediated colitis, immune-mediated hepatitis,",
+      "retrieved_at": "2026-10-08T15:35:45Z"
+    },
+    {
+      "source": "openfda",
+      "title": "openFDA label: OPDIVO QVANTIG",
+      "url": "https://api.fda.gov/drug/label.json?search=set_id:7f8c38fa-42f4-4387-9e8c-7a1c66855d8b",
+      "excerpt": "1 INDICATIONS AND USAGE OPDIVO QVANTIG is a combination of nivolumab, a programmed death receptor-1 (PD-1)-blocking antibody, and hyaluronidase, an endoglycosidase, indicated for the treatment of: Renal Cell Carcinoma (RCC) • adult patients with intermediate or poor risk advanced",
+      "retrieved_at": "2026-10-08T15:35:46Z"
+    },
+    {
+      "source": "openfda",
+      "title": "openFDA warnings: OPDIVO QVANTIG",
+      "url": "https://open.fda.gov/apis/drug/label/",
+      "excerpt": "5 WARNINGS AND PRECAUTIONS • Immune-Mediated Adverse Reactions : (5.1) o Immune-mediated adverse reactions, which may be severe or fatal, can occur in any organ system or tissue, including the following: immune-mediated pneumonitis, immune-mediated colitis, immune-mediated hepati",
+      "retrieved_at": "2026-10-08T15:35:46Z"
+    },
+    {
+      "source": "clinicaltrials",
+      "title": "Immune Monitoring in Metastatic Melanoma",
+      "url": "https://clinicaltrials.gov/study/NCT04158544",
+      "excerpt": "Immune Monitoring in Metastatic Melanoma",
+      "retrieved_at": "2026-10-08T15:35:46Z"
+    },
+    {
+      "source": "clinicaltrials",
+      "title": "Precise Local Injection of Anti-cancer Drugs Using Presage's CIVO Device in Soft Tissue Sarcoma",
+      "url": "https://clinicaltrials.gov/study/NCT03056599",
+      "excerpt": "Precise Local Injection of Anti-cancer Drugs Using Presage's CIVO Device in Soft Tissue Sarcoma",
+      "retrieved_at": "2026-10-08T15:35:46Z"
+    },
+    {
+      "source": "clinicaltrials",
+      "title": "International Multicentric Study ARON-1",
+      "url": "https://clinicaltrials.gov/study/NCT05287464",
+      "excerpt": "International Multicentric Study ARON-1",
+      "retrieved_at": "2026-10-08T15:35:46Z"
+    },
+    {
+      "source": "cms",
+      "title": "CMS Medicare Coverage Database search",
+      "url": "https://www.cms.gov/medicare-coverage-database/search.aspx",
+      "excerpt": "Live CMS MCD probe for topic 'Keytruda' (HTTP 200).",
+      "retrieved_at": "2026-10-08T15:35:46Z"
+    }
+  ],
+  "human_review_flags": [
+    {
+      "severity": "warn",
+      "reason": "Claim lacks grounded citation support.",
+      "claim": "Keytruda major warnings (excerpt): See FDA label."
+    },
+    {
+      "severity": "info",
+      "reason": "Low confidence claim; confirm with source documents.",
+      "claim": "Keytruda major warnings (excerpt): See FDA label."
+    },
+    {
+      "severity": "warn",
+      "reason": "Claim lacks grounded citation support.",
+      "claim": "Opdivo major warnings (excerpt): See FDA label."
+    },
+    {
+      "severity": "info",
+      "reason": "Low confidence claim; confirm with source documents.",
+      "claim": "Opdivo major warnings (excerpt): See FDA label."
+    },
+    {
+      "severity": "warn",
+      "reason": "Coverage topic 'Keytruda' requires human medical-affairs / reimbursement review. Prototype returns CMS pointers only.",
+      "claim": null
+    }
+  ],
+  "tool_trace": [
+    {
+      "tool": "fda_search_label",
+      "args": {
+        "drug": "Keytruda",
+        "limit": 2
+      },
+      "ok": true,
+      "latency_ms": 761.8334580038209,
+      "error": null,
+      "result_preview": "{'drug': 'Keytruda', 'results': [{'brand': 'KEYTRUDA QLEX', 'generic': 'PEMBROLIZUMAB AND BERAHYALURONIDASE ALFA-PMPH', 'indications_and_usage': '1 INDICATIONS AND USAGE KEYTRUDA QLEX is a combination of pembrolizumab, a programmed death receptor-1 (PD-1)-blocking antibody, and berahyaluronidase alfa, an endoglycosidase, indicated: Melanoma for the treatment of adult patients with unresectable or metastatic melanoma. ( 1.1 ) for the adjuvant treatment of adult and pediatric patients 12 years and"
+    },
+    {
+      "tool": "fda_get_warnings",
+      "args": {
+        "drug": "Keytruda"
+      },
+      "ok": true,
+      "latency_ms": 366.4074590051314,
+      "error": null,
+      "result_preview": "{'drug': 'Keytruda', 'boxed_warning': '', 'warnings': '5 WARNINGS AND PRECAUTIONS Immune-Mediated Adverse Reactions ( 5.1 ) Immune-mediated adverse reactions, which may be severe or fatal, can occur in any organ system or tissue, including the following: immune-mediated pneumonitis, immune-mediated colitis, immune-mediated hepatitis, immune-mediated endocrinopathies, immune-mediated nephritis with renal dysfunction, immune-mediated dermatologic adverse reactions, and solid organ transplant rejec"
+    },
+    {
+      "tool": "fda_search_label",
+      "args": {
+        "drug": "Opdivo",
+        "limit": 2
+      },
+      "ok": true,
+      "latency_ms": 409.76125000452157,
+      "error": null,
+      "result_preview": "{'drug': 'Opdivo', 'results': [{'brand': 'OPDIVO QVANTIG', 'generic': 'NIVOLUMAB AND HYALURONIDASE-NVHY', 'indications_and_usage': '1 INDICATIONS AND USAGE OPDIVO QVANTIG is a combination of nivolumab, a programmed death receptor-1 (PD-1)-blocking antibody, and hyaluronidase, an endoglycosidase, indicated for the treatment of: Renal Cell Carcinoma (RCC) • adult patients with intermediate or poor risk advanced RCC, as a first-line treatment following combination treatment with intravenous nivolum"
+    },
+    {
+      "tool": "fda_get_warnings",
+      "args": {
+        "drug": "Opdivo"
+      },
+      "ok": true,
+      "latency_ms": 335.7131250013481,
+      "error": null,
+      "result_preview": "{'drug': 'Opdivo', 'boxed_warning': '', 'warnings': '5 WARNINGS AND PRECAUTIONS • Immune-Mediated Adverse Reactions : (5.1) o Immune-mediated adverse reactions, which may be severe or fatal, can occur in any organ system or tissue, including the following: immune-mediated pneumonitis, immune-mediated colitis, immune-mediated hepatitis and hepatotoxicity, immune-mediated endocrinopathies, immune-mediated dermatologic adverse reactions, and immune-mediated nephritis and renal dysfunction. o Monito"
+    },
+    {
+      "tool": "trials_search",
+      "args": {
+        "query": "Keytruda Opdivo",
+        "page_size": 5
+      },
+      "ok": true,
+      "latency_ms": 117.61279200436547,
+      "error": null,
+      "result_preview": "{'query': 'Keytruda Opdivo', 'studies': [{'nct_id': 'NCT04158544', 'title': 'Immune Monitoring in Metastatic Melanoma', 'overall_status': 'UNKNOWN', 'phases': None, 'url': 'https://clinicaltrials.gov/study/NCT04158544', 'source_api': 'https://clinicaltrials.gov/api/v2/studies', 'citation': {'source': <SourceKind.CLINICALTRIALS: 'clinicaltrials'>, 'title': 'Immune Monitoring in Metastatic Melanoma', 'url': 'https://clinicaltrials.gov/study/NCT04158544', 'excerpt': 'Immune Monitoring in Metastatic"
+    },
+    {
+      "tool": "cms_coverage_lookup",
+      "args": {
+        "topic": "Keytruda"
+      },
+      "ok": true,
+      "latency_ms": 145.45100000395905,
+      "error": null,
+      "result_preview": "{'topic': 'Keytruda', 'summary': \"CMS Medicare Coverage Database is reachable=True (HTTP 200, 145 ms). Human medical-affairs / reimbursement review is required for 'Keytruda'. This tool returns a citation pointer only — not a coverage determination.\", 'status': 'review_required', 'cms_http_status': 200, 'cms_reachable': True, 'latency_ms': 145.35825000348268, 'live': True, 'citation': {'source': <SourceKind.CMS: 'cms'>, 'title': 'CMS Medicare Coverage Database search', 'url': 'https://www.cms.go"
+    }
+  ],
+  "mode": "deterministic",
+  "disclaimer": "Informational prototype only. Not medical advice, not promotional content, and not an autonomous clinical or commercial recommendation. Unsupported or potentially off-label claims are flagged for human review."
+}

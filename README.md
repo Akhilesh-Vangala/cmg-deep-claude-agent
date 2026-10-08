@@ -56,17 +56,20 @@ cd cmg-deep-claude-agent
 python -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
 
-# Offline golden eval (CI-friendly)
-cmg-eval --offline
-
-# One briefing
-cmg-agent --offline --pretty \
-  --drugs Keytruda Opdivo \
+# LIVE demo against openFDA + ClinicalTrials.gov + CMS (cached under .cache/)
+python scripts/capture_live_demo.py
+cmg-agent --pretty --drugs Keytruda Opdivo \
   -q "Compare labeled indications and major warnings of Keytruda and Opdivo, identify relevant clinical trials, and prepare a cited briefing for medical-affairs review."
 
-# API
+# Offline golden eval (CI only — fixtures marked [CI FIXTURE])
+cmg-eval --offline
+
+# API (live by default)
 uvicorn cmg_agent.api.app:app --reload
 ```
+
+Live demo artifacts: `examples/live/` (real NCT IDs, openFDA set_ids, HTTP latencies).
+API responses are disk-cached for 7 days so demos are fast without looking fabricated.
 
 ## Reusable across workflows
 

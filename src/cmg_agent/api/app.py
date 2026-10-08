@@ -13,7 +13,10 @@ app = FastAPI(
     description="Reusable healthcare intelligence agent with MCP tools, skills, and human review.",
     version=__version__,
 )
-agent = CMGDeepClaudeAgent(offline=False)
+# Live public APIs by default (disk-cached). Set CMG_OFFLINE=1 for CI fixtures.
+import os
+
+agent = CMGDeepClaudeAgent(offline=os.getenv("CMG_OFFLINE", "").lower() in {"1", "true", "yes"})
 
 
 @app.get("/health")

@@ -1,12 +1,11 @@
-"""ClinicalTrials.gov MCP-style tools."""
+"""ClinicalTrials.gov MCP-style tools — live API v2 with disk cache."""
 
 from __future__ import annotations
 
 import time
 from typing import Any
 
-import httpx
-
+from cmg_agent.http_cache import CachedClient
 from cmg_agent.schemas import Citation, SourceKind, ToolCallRecord
 
 
@@ -14,15 +13,15 @@ class TrialsTools:
     name = "trials_mcp"
     BASE = "https://clinicaltrials.gov/api/v2/studies"
 
-    def __init__(self, client: httpx.Client | None = None, offline: bool = False):
-        self.client = client or httpx.Client(timeout=20.0)
+    def __init__(self, offline: bool = False, cache: CachedClient | None = None):
         self.offline = offline
+        self.cache = cache or CachedClient()
 
     def list_tools(self) -> list[dict[str, Any]]:
         return [
             {
                 "name": "trials_search",
-                "description": "Search ClinicalTrials.gov studies by intervention/condition.",
+                "description": "Search ClinicalTrials.gov studies by intervention/condition (live API v2).",
                 "input_schema": {
                     "type": "object",
                     "properties": {
@@ -41,8 +40,13 @@ class TrialsTools:
                 raise ValueError(f"Unknown trials tool: {tool}")
             result = self.search(args["query"], int(args.get("page_size", 5)))
             ms = (time.perf_counter() - start) * 1000
+            meta = result.pop("_meta", {})
             return result, ToolCallRecord(
-                tool=tool, args=args, ok=True, latency_ms=ms, result_preview=str(result)[:400]
+                tool=tool,
+                args=args,
+                ok=True,
+                latency_ms=float(meta.get("latency_ms", ms)),
+                result_preview=str(result)[:500],
             )
         except Exception as exc:  # noqa: BLE001
             ms = (time.perf_counter() - start) * 1000
@@ -52,68 +56,63 @@ class TrialsTools:
 
     def search(self, query: str, page_size: int = 5) -> dict[str, Any]:
         if self.offline:
-            return self._offline(query)
-        resp = self.client.get(
+            # Minimal CI fixture only — production demos should run live.
+            study = {
+                "nct_id": "NCT00000000",
+                "title": f"[CI FIXTURE] Study related to {query}",
+                "overall_status": "COMPLETED",
+                "phases": ["PHASE3"],
+                "url": "https://clinicaltrials.gov/",
+                "citation": Citation(
+                    source=SourceKind.CLINICALTRIALS,
+                    title=f"[CI FIXTURE] {query}",
+                    url="https://clinicaltrials.gov/",
+                    excerpt=f"CI fixture trial for {query}",
+                ).model_dump(),
+            }
+            return {
+                "query": query,
+                "studies": [study],
+                "live": False,
+                "_meta": {"cache": "fixture", "latency_ms": 0.1},
+            }
+
+        data, meta = self.cache.get_json(
             self.BASE,
-            params={
-                "query.term": query,
-                "pageSize": page_size,
-                "format": "json",
-            },
+            params={"query.term": query, "pageSize": page_size, "format": "json"},
         )
-        if resp.status_code >= 400:
-            return self._offline(query)
-        data = resp.json()
         studies = []
         for study in data.get("studies", [])[:page_size]:
             proto = study.get("protocolSection", {})
             ident = proto.get("identificationModule", {})
             status = proto.get("statusModule", {})
+            design = proto.get("designModule", {})
             nct = ident.get("nctId", "")
             title = ident.get("briefTitle", "")
+            phase = design.get("phases") or design.get("phaseList", {}).get("phases")
             studies.append(
                 {
                     "nct_id": nct,
                     "title": title,
                     "overall_status": status.get("overallStatus"),
+                    "phases": phase,
                     "url": f"https://clinicaltrials.gov/study/{nct}" if nct else "",
+                    "source_api": self.BASE,
                     "citation": Citation(
                         source=SourceKind.CLINICALTRIALS,
                         title=title or nct,
                         url=f"https://clinicaltrials.gov/study/{nct}" if nct else "https://clinicaltrials.gov/",
                         excerpt=title[:280],
+                        retrieved_at=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
                     ).model_dump(),
                 }
             )
         if not studies:
-            return self._offline(query)
-        return {"query": query, "studies": studies}
-
-    def _offline(self, query: str) -> dict[str, Any]:
-        studies = [
-            {
-                "nct_id": "NCT01234567",
-                "title": f"Phase 3 oncology study related to {query}",
-                "overall_status": "COMPLETED",
-                "url": "https://clinicaltrials.gov/study/NCT01234567",
-                "citation": Citation(
-                    source=SourceKind.CLINICALTRIALS,
-                    title=f"Phase 3 oncology study related to {query}",
-                    url="https://clinicaltrials.gov/study/NCT01234567",
-                    excerpt=f"Offline fixture trial for query: {query}",
-                ).model_dump(),
-            },
-            {
-                "nct_id": "NCT07654321",
-                "title": f"Immunotherapy comparative study for {query}",
-                "overall_status": "RECRUITING",
-                "url": "https://clinicaltrials.gov/study/NCT07654321",
-                "citation": Citation(
-                    source=SourceKind.CLINICALTRIALS,
-                    title=f"Immunotherapy comparative study for {query}",
-                    url="https://clinicaltrials.gov/study/NCT07654321",
-                    excerpt=f"Offline fixture recruiting trial for {query}",
-                ).model_dump(),
-            },
-        ]
-        return {"query": query, "studies": studies, "offline": True}
+            raise RuntimeError(f"ClinicalTrials.gov returned 0 studies for '{query}'")
+        return {
+            "query": query,
+            "studies": studies,
+            "live": True,
+            "total_count": data.get("totalCount"),
+            "_meta": meta,
+        }

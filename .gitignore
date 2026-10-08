@@ -8,5 +8,7 @@ dist/
 build/
 .env
 .DS_Store
+.cache/
 traces/*.json
 !traces/.gitkeep
+# keep committed live demo artifacts under examples/live/
