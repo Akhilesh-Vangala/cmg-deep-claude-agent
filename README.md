@@ -1,6 +1,6 @@
-# CMG Deep Claude Agent
+# Evidence MCP Agent
 
-A healthcare-evidence agent that uses **Claude Code as its agent runtime**. It answers Commercial, Medical, and Government Affairs (CMG) questions about drug labels, clinical trials, and Medicare coverage, using live public data through a **Model Context Protocol (MCP)** server and four reusable **Agent Skills**. Every answer is graded by a program that checks each cited quote word for word against the source the agent actually retrieved.
+A healthcare-evidence agent that uses **Claude Code as its agent runtime**. It answers healthcare and policy questions about drug labels, clinical trials, and Medicare coverage, using live public data through a **Model Context Protocol (MCP)** server and four reusable **Agent Skills**. Every answer is graded by a program that checks each cited quote word for word against the source the agent actually retrieved.
 
 > Research prototype on public data only. Not medical advice and not promotional content. No PHI.
 
@@ -29,7 +29,7 @@ A healthcare-evidence agent that uses **Claude Code as its agent runtime**. It a
 - **Sonnet vs Haiku: +2 points at 16x the cost.** For this workload, Haiku with skills is the better default.
 - **Remaining failures are over-escalation** (flagging human review when not required), never a wrong product, an unverifiable claim passing, or a missed refusal.
 
-Full ablation analysis, failure taxonomy, and cost/quality chart: [agentbench-cmg](https://github.com/Akhilesh-Vangala/agentbench-cmg).
+Full ablation analysis, failure taxonomy, and cost/quality chart: [agent-config-bench](https://github.com/Akhilesh-Vangala/agent-config-bench).
 
 ## How it works
 
